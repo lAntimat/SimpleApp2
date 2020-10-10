@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import java.lang.reflect.Array;
@@ -28,7 +29,20 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         adapter = new NewsAdapter(this, generateFakeNews());
+        adapter.setOnClickListener(new OnNewsClickListener() {
+            @Override
+            public void onItemClick(News news) {
+                Intent intent = new Intent(getApplicationContext(), DetailActivity.class);
+                intent.putExtra("title", news.getNewsTitle());
+
+                startActivity(intent);
+            }
+        });
+
+
         recyclerView.setAdapter(adapter);
+
+
     }
 
     private ArrayList<News> generateFakeNews() {
