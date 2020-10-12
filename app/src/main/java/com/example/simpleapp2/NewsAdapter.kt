@@ -1,68 +1,48 @@
-package com.example.simpleapp2;
+package com.example.simpleapp2
 
-import android.content.Context;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.recyclerview.widget.RecyclerView
 
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.recyclerview.widget.RecyclerView;
+internal class NewsAdapter : RecyclerView.Adapter<NewsAdapter.ViewHolder>() {
 
-import java.util.List;
+    private val newsList: ArrayList<News> = arrayListOf()
 
-class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> {
-
-    private LayoutInflater inflater;
-    private List<News> newsList;
-    private OnNewsClickListener onClickListener;
-
-    NewsAdapter(Context context, List<News> newsList) {
-        this.newsList = newsList;
-        this.inflater = LayoutInflater.from(context);
+    private var onClickListener: ((news: News) -> Unit)? = null
+    fun setOnClickListener(listener: (news: News) -> Unit) {
+        onClickListener = listener
     }
 
-    void setOnClickListener(OnNewsClickListener listener) {
-        onClickListener = listener;
+    fun addList(list: ArrayList<News>) {
+        newsList.clear()
+        newsList.addAll(list)
     }
 
-    @Override
-    public NewsAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-
-        View view = inflater.inflate(R.layout.recycler_item_news, parent, false);
-        return new ViewHolder(view);
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.recycler_item_news, parent, false)
+        return ViewHolder(view)
     }
 
-    @Override
-    public void onBindViewHolder(NewsAdapter.ViewHolder holder, int position) {
-        final News news = newsList.get(position);
-
-        holder.tvTitle.setText(news.getNewsTitle());
-        holder.tvSubTitle.setText(news.getNewsSubtitle());
-
-        holder.constraintLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onClickListener.onItemClick(news);
-            }
-        });
-
-    }
-
-    @Override
-    public int getItemCount() {
-        return newsList.size();
-    }
-
-    public class ViewHolder extends RecyclerView.ViewHolder {
-        final TextView tvTitle;
-        final TextView tvSubTitle;
-        final ConstraintLayout constraintLayout;
-        ViewHolder(View view){
-            super(view);
-            tvTitle = (TextView) view.findViewById(R.id.tvTitle);
-            tvSubTitle = (TextView) view.findViewById(R.id.tvSubTitle);
-            constraintLayout = (ConstraintLayout) view.findViewById(R.id.content);
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val news = newsList[position]
+        holder.tvTitle.text = news.newsTitle
+        holder.tvSubTitle.text = news.newsSubtitle
+        holder.constraintLayout.setOnClickListener { 
+            onClickListener?.invoke(news)
         }
     }
+
+    override fun getItemCount(): Int {
+        return newsList.size
+    }
+
+    inner class ViewHolder constructor(view: View) : RecyclerView.ViewHolder(view) {
+        val tvTitle: TextView = view.findViewById<View>(R.id.tvTitle) as TextView
+        val tvSubTitle: TextView = view.findViewById<View>(R.id.tvSubTitle) as TextView
+        val constraintLayout: ConstraintLayout = view.findViewById<View>(R.id.content) as ConstraintLayout
+    }
+
 }

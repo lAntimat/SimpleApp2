@@ -1,59 +1,93 @@
-package com.example.simpleapp2;
+package com.example.simpleapp2
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import android.content.Intent
+import android.os.Bundle
+import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.gson.Gson
+import kotlinx.android.synthetic.main.activity_main.*
+import okhttp3.OkHttpClient
+import org.json.JSONArray
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.*
 
-import android.content.Intent;
-import android.os.Bundle;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
+class MainActivity : AppCompatActivity() {
 
-public class MainActivity extends AppCompatActivity {
-
-    private RecyclerView recyclerView;
-    private NewsAdapter adapter;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        initRecyclerView();
-
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        initRecyclerView()
+        getNews()
     }
 
-    private void initRecyclerView() {
-        recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    private fun initRecyclerView() {
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        val adapter = NewsAdapter()
 
-        adapter = new NewsAdapter(this, generateFakeNews());
-        adapter.setOnClickListener(new OnNewsClickListener() {
-            @Override
-            public void onItemClick(News news) {
-                Intent intent = new Intent(getApplicationContext(), DetailActivity.class);
-                intent.putExtra("title", news.getNewsTitle());
-
-                startActivity(intent);
-            }
-        });
-
-
-        recyclerView.setAdapter(adapter);
-
-
-    }
-
-    private ArrayList<News> generateFakeNews() {
-
-        ArrayList<News> newsList = new ArrayList<News>();
-
-        for (int i = 0; i < 100; i++) {
-            News news = new News("Hot news " + i, "hothothothtothot");
-            newsList.add(news);
+        adapter.setOnClickListener {
+            val intent = Intent(applicationContext, DetailActivity::class.java)
+            intent.putExtra("title", it.newsTitle)
+            startActivity(intent)
         }
 
-        return newsList;
+        recyclerView.adapter = adapter
+    }
+
+    private fun generateFakeNews(): ArrayList<News> {
+        val newsList = ArrayList<News>()
+        for (i in 0..99) {
+            val news = News("Hot news $i", "hothothothtothot")
+            newsList.add(news)
+        }
+        return newsList
+    }
+
+    private fun getNews() {
+
+        val okHttpClientBuilder = OkHttpClient.Builder()
+
+
+        val okHttpClient = okHttpClientBuilder.build()
+
+        val retrofit = Retrofit.Builder()
+                .client(okHttpClient)
+                .baseUrl("https://api.github.com/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+
+        val service = retrofit.create(GitHubService::class.java)
+
+        val call: Call<Object> = service.listRepos("lantimat")
+
+        call.enqueue(object : Callback<Object> {
+            override fun onResponse(call: Call<Object>, response: Response<Object>) {
+                Log.d("onResponse", response.toString())
+
+                val json = JSONArray(Gson().toJson(response.body()))
+                val title = json.getJSONObject(0)?.getString("name") ?: ""
+                val subtitle = json.getJSONObject(0)?.getString("full_name") ?: ""
+                Log.d("title", title ?: "")
+
+
+                val list = arrayListOf(News(title, subtitle))
+
+                (recyclerView.adapter as NewsAdapter).addList(list)
+                (recyclerView.adapter as NewsAdapter).notifyDataSetChanged()
+
+            }
+
+            override fun onFailure(call: Call<Object>, t: Throwable) {
+                Log.d("onFailure", t.toString())
+            }
+
+        })
+
     }
 }
